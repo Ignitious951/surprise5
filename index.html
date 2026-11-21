@@ -10,9 +10,11 @@
 :root{
   --her-name:"Diana (kadoli😍🥰)";
   --my-name:"Ignitious";
-  --start-date:"2026-08-16";   /* ← Your real date */
-  --song-title:"All I Ever Need";
-  --song-artist:"Austin Mahone";
+  --start-date:"2026-08-16";   /* ← Set to match your 98 days (Nov 22 - Aug 16) */
+  --song1-title:"All I Ever Need";
+  --song1-artist:"Austin Mahone";
+  --song2-title:"Halle";
+  --song2-artist:"Moses Bliss";
 
   /* Midnight & starlight palette */
   --night:#0b0a1f;
@@ -110,9 +112,9 @@ body{
 
 /* ========= MAIN STAGE (horizontal) ========= */
 #stage{position:fixed;inset:0;z-index:10;display:none}
-#track{display:flex;height:100%;width:600%;
+#track{display:flex;height:100%;width:700%;
   transition:transform 1.05s cubic-bezier(.77,0,.18,1)}
-.panel{width:calc(100%/6);height:100%;overflow-y:auto;overflow-x:hidden;
+.panel{width:calc(100%/7);height:100%;overflow-y:auto;overflow-x:hidden;
   padding:clamp(20px,5vw,70px);display:flex;flex-direction:column;
   align-items:center;justify-content:center;position:relative}
 .panel::-webkit-scrollbar{width:6px}
@@ -177,6 +179,12 @@ body{
 
 /* ========= SLIDE 2: MUSIC ========= */
 .music{text-align:center;max-width:520px}
+.track-selector{display:flex;justify-content:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.track-btn{font-family:var(--sans);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;
+  padding:8px 16px;border-radius:99px;border:1px solid rgba(231,200,115,.3);
+  background:transparent;color:var(--mist);cursor:pointer;transition:.3s}
+.track-btn:hover{border-color:var(--gold);color:var(--gold)}
+.track-btn.active{background:var(--gold);color:var(--night);border-color:var(--gold);box-shadow:0 0 20px var(--glow)}
 .vinyl-wrap{position:relative;width:220px;height:220px;margin:0 auto 26px}
 .vinyl{width:100%;height:100%;border-radius:50%;
   background:radial-gradient(circle at 50% 50%, #1a1440 30%, #0d0a24 31%);
@@ -189,8 +197,8 @@ body{
   box-shadow:0 0 20px var(--glow)}
 .vinyl .hole{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--night)}
 .now-playing{font-size:.68rem;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.song-title{font-family:var(--serif);font-size:1.7rem;font-weight:500}
-.song-artist{color:var(--mist);margin-bottom:24px}
+.song-title{font-family:var(--serif);font-size:1.7rem;font-weight:500;transition:.3s}
+.song-artist{color:var(--mist);margin-bottom:24px;transition:.3s}
 .player{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:999px}
 .play-btn{width:46px;height:46px;flex-shrink:0;border-radius:50%;border:none;cursor:pointer;
   background:radial-gradient(circle at 35% 30%,var(--gold-soft),var(--gold));
@@ -208,7 +216,7 @@ body{
 .eq.on span:nth-child(4){animation-delay:.3s}.eq.on span:nth-child(5){animation-delay:.15s}
 .eq.on span:nth-child(6){animation-delay:.25s}.eq.on span:nth-child(7){animation-delay:.05s}
 @keyframes eqBounce{50%{height:40px}}
-.note{font-family:var(--serif);font-style:italic;color:var(--mist);margin-top:22px;font-size:.98rem}
+.note{font-family:var(--serif);font-style:italic;color:var(--mist);margin-top:22px;font-size:.98rem;min-height:3em;transition:.4s}
 
 /* ========= SLIDE 3: FILM STRIP ========= */
 .film{width:100%;max-width:900px;overflow-x:auto;padding:16px 4px 26px;scroll-snap-type:x mandatory;scrollbar-width:thin}
@@ -375,15 +383,24 @@ body{
       <div class="kicker">Our soundtrack</div>
       <h2>Our <em>Music</em></h2>
       <div class="neu music">
+        
+        <!-- TRACK SELECTOR -->
+        <div class="track-selector">
+          <button class="track-btn active" id="btnTrack1" onclick="switchTrack(0)">Our Love Song 💖</button>
+          <button class="track-btn" id="btnTrack2" onclick="switchTrack(1)">Our Spiritual Song 🙏</button>
+        </div>
+
         <div class="vinyl-wrap">
           <div class="vinyl" id="vinyl"><div class="label"></div><div class="hole"></div></div>
         </div>
-        <div class="now-playing">Now playing</div>
-        <div class="song-title">All I Ever Need</div>
-        <div class="song-artist">Austin Mahone</div>
+        <div class="now-playing" id="nowPlayingLabel">Now playing</div>
+        <div class="song-title" id="songTitle">All I Ever Need</div>
+        <div class="song-artist" id="songArtist">Austin Mahone</div>
 
-        <!-- Replace song.mp3 with your own file -->
-        <audio id="audio" preload="none"><source src="song.mp3" type="audio/mpeg"></audio>
+        <!-- AUDIO TRACKS -->
+        <audio id="audio" preload="none">
+          <source id="audioSource" src="song1.mp3" type="audio/mpeg">
+        </audio>
 
         <div class="player neu-inset">
           <button class="play-btn" id="playBtn">▶</button>
@@ -395,7 +412,7 @@ body{
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
 
-        <p class="note">"Every love story has a soundtrack. This is ours."</p>
+        <p class="note" id="songNote">"Every love story has a soundtrack. This is ours."</p>
       </div>
     </div>
 
@@ -480,6 +497,23 @@ body{
 <canvas id="aura"></canvas>
 
 <script>
+/* ================= CONFIG ================= */
+const TRACKS = [
+  { 
+    title: "All I Ever Need", 
+    artist: "Austin Mahone", 
+    src: "song1.mp3", 
+    note: "\"Every love story has a soundtrack. This is ours.\"" 
+  },
+  { 
+    title: "Halle", 
+    artist: "Moses Bliss", 
+    src: "song2.mp3", 
+    note: "\"Our spiritual song. A reminder of the grace that brought us together.\"" 
+  }
+];
+let currentTrack = 0;
+
 /* ================= STARFIELD ================= */
 const canvas = document.querySelector('#stars canvas');
 const ctx = canvas.getContext('2d');
@@ -552,20 +586,19 @@ const next = document.getElementById('next');
 const dotsWrap = document.getElementById('dots');
 
 function initSite(){
-  // ---- DAYS + LIVE CLOCK ----
+  // Correctly set to Aug 16, 2026 (Exactly 98 days from Nov 22, 2026)
   const start = new Date("2026-08-16T00:00:00");
   
   function updateTime(){
     const now = new Date();
     const diff = now - start;
-    if(diff < 0){ return; } // not started yet
+    if(diff < 0){ return; }
     
     const days = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     
-    // days counter animation only on first load
     const el = document.getElementById('daysNum');
     if(!el.dataset.done){
       let n = 0;
@@ -580,7 +613,6 @@ function initSite(){
       el.textContent = days;
     }
     
-    // clock
     document.getElementById('hours').textContent = String(hours).padStart(2,'0');
     document.getElementById('minutes').textContent = String(minutes).padStart(2,'0');
     document.getElementById('seconds').textContent = String(seconds).padStart(2,'0');
@@ -589,7 +621,6 @@ function initSite(){
   updateTime();
   setInterval(updateTime, 1000);
 
-  // dots
   for(let i=0;i<TOTAL;i++){
     const d=document.createElement('button');
     d.className='dot'+(i===0?' active':'');
@@ -640,7 +671,7 @@ function initSwipe(){
   }, {passive:true});
 }
 
-/* ================= PLAYER ================= */
+/* ================= PLAYER (2 TRACKS) ================= */
 function initPlayer(){
   const audio = document.getElementById('audio');
   const btn = document.getElementById('playBtn');
@@ -682,6 +713,43 @@ function initPlayer(){
   audio.addEventListener('ended',()=>{
     btn.textContent='▶'; eq.classList.remove('on'); vinyl.classList.remove('playing');
   });
+}
+
+function switchTrack(index){
+  const audio = document.getElementById('audio');
+  const source = document.getElementById('audioSource');
+  const wasPlaying = !audio.paused;
+  
+  currentTrack = index;
+  
+  // Update UI
+  document.getElementById('songTitle').textContent = TRACKS[index].title;
+  document.getElementById('songArtist').textContent = TRACKS[index].artist;
+  document.getElementById('songNote').textContent = TRACKS[index].note;
+  
+  document.getElementById('btnTrack1').classList.toggle('active', index === 0);
+  document.getElementById('btnTrack2').classList.toggle('active', index === 1);
+  
+  // Change audio source
+  source.src = TRACKS[index].src;
+  audio.load();
+  
+  // Reset progress
+  document.getElementById('fill').style.width = '0%';
+  document.getElementById('time').textContent = '0:00';
+  
+  // Resume if it was playing
+  if(wasPlaying){
+    audio.play().catch(()=>{
+      document.getElementById('playBtn').textContent = '▶';
+      document.getElementById('eq').classList.remove('on');
+      document.getElementById('vinyl').classList.remove('playing');
+    });
+  } else {
+    document.getElementById('playBtn').textContent = '▶';
+    document.getElementById('eq').classList.remove('on');
+    document.getElementById('vinyl').classList.remove('playing');
+  }
 }
 
 /* ================= STAR JAR ================= */
