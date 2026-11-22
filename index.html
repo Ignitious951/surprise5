@@ -1005,7 +1005,8 @@ function startAurora(){
 /* ===== SHARED STORAGE SETTINGS (Supabase). Fill these in so photos & songs are shared with everyone. =====
    Leave url/key empty and the site still works, but additions stay on the device that added them.
    See setup-supabase.md for the 10-minute setup. */
-window.CLOUD_CONFIG={ url:"", key:"", bucket:"surprise-media" };
+window.CLOUD_CONFIG={ url:"https://swpaijduwpvkrhoswikw.supabase.co", key:"sb_publishable_RieOf_KpVhcOeleeTUF7qg_N9v04f_W", bucket:"surprise-media" };
+(function(c){c.url=String(c.url||'').trim().replace(/\/rest\/v1.*$/,'').replace(/\/+$/,'');c.key=String(c.key||'').trim();})(window.CLOUD_CONFIG);
 </script>
 <script>
 (()=>{
@@ -1274,8 +1275,11 @@ async function pickWho(){
 }
 async function ensureWho(){return me||pickWho()}
 $('wWho').onclick=pickWho;$('cWho').onclick=pickWho;paintWho();
-const note=cloud?'':"Shared storage isn't connected yet, so this stays on this device only.";
+const miss=!BASE?'the URL is empty':!CLOUD.key?'the key is empty':'';
+const note=cloud?'':"Shared storage isn't connected yet"+(miss?': '+miss+' in the CLOUD_CONFIG line of index.html':'')+'. Until then this stays on this device only.';
 $('wNote').textContent=note;$('cNote').textContent=cloud?'':note;
+const okNote=()=>{if(cloud){$('wNote').textContent='✓ Connected to shared storage';$('cNote').textContent='✓ Connected to shared storage'}};
+const badNote=e=>{if(cloud){const t='Problem reaching shared storage: '+why(e)+' (check the URL and key in the file)';$('wNote').textContent=t;$('cNote').textContent=t}};
 
 /* --- FUN WORDS --- */
 let words=[],tab='all',wsig='';
@@ -1319,7 +1323,7 @@ async function delWord(w){
   catch(e){toast("Couldn't delete: "+why(e))}
 }
 $('wAdd').onclick=addWord;
-async function refreshWords(){try{const r=await db.list('words');const s=JSON.stringify(r);if(s!==wsig){wsig=s;words=r;renderWords()}}catch(e){}}
+async function refreshWords(){try{const r=await db.list('words');okNote();const s=JSON.stringify(r);if(s!==wsig){wsig=s;words=r;renderWords()}}catch(e){badNote(e)}}
 
 /* --- CHAT --- */
 let msgs=[],limit=300,csig='',seenMax=null;
@@ -1343,12 +1347,12 @@ function renderChat(stick){
 }
 async function refreshChat(stick){
   try{
-    const r=await db.list('messages',limit);const s=sigOf(r);
+    const r=await db.list('messages',limit);okNote();const s=sigOf(r);
     if(s===csig){if(stick)renderChat(true);return}
     const top=r.length?r[r.length-1].id:0;
     if(seenMax!==null&&top>seenMax){const n=r.filter(m=>m.id>seenMax&&m.author!==me).pop();if(n&&currentSlide!==7)toast('💬 New message from '+n.author)}
     seenMax=Math.max(seenMax||0,top);csig=s;msgs=r;renderChat(stick);
-  }catch(e){}
+  }catch(e){badNote(e)}
 }
 async function send(){
   const inp=$('cIn'),t=inp.value.trim();if(!t)return;
