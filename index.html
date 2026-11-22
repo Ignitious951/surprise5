@@ -894,5 +894,238 @@ function startAurora(){
   draw();
 }
 </script>
+
+<!-- ===== ADD-ON: add your own photos & songs (saved on this device) ===== -->
+<style>
+.x-add{scroll-snap-align:center;flex-shrink:0;width:220px;height:260px;border:1.5px dashed var(--gold);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--gold);cursor:pointer;transition:.3s;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;text-align:center}
+.x-add div{font-size:2.4rem;font-family:var(--serif);letter-spacing:0}
+.x-add:hover{background:rgba(231,200,115,.08);box-shadow:0 0 30px var(--glow)}
+.x-add:active{transform:scale(.96)}
+.x-del{position:absolute;top:10px;right:10px;z-index:3;width:28px;height:28px;border-radius:50%;border:none;background:rgba(11,10,31,.75);color:var(--gold-soft);cursor:pointer;opacity:0;transition:.3s}
+.frame:hover .x-del{opacity:.9}
+@media(hover:none){.x-del{opacity:.85}}
+.x-sx,.x-ed{margin-left:4px;padding:4px 6px;opacity:.6}
+#xModal{position:fixed;inset:0;z-index:9900;background:rgba(6,5,18,.82);display:none;align-items:center;justify-content:center;padding:20px}
+#xModal.on{display:flex}
+#xModal .xform{background:var(--neu-base);border:1px solid rgba(231,200,115,.3);border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 0 50px var(--glow)}
+#xModal h4{font-family:var(--serif);font-weight:500;font-size:1.4rem;color:var(--gold-soft);margin-bottom:14px;text-align:center}
+#xModal label{display:block;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--mist);margin-bottom:12px}
+#xModal input{display:block;width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid rgba(231,200,115,.3);background:var(--neu-dark);color:var(--starlight);font-family:var(--sans);font-size:1rem;outline:none}
+#xModal input:focus{border-color:var(--gold)}
+#xModal .xb{display:flex;gap:10px;justify-content:center;margin-top:16px}
+#xModal button{font-family:var(--sans);letter-spacing:2px;text-transform:uppercase;font-size:.72rem;padding:12px 24px;border-radius:99px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer}
+#xModal .xo{background:var(--gold);color:var(--night)}
+.x-sx:hover,.x-ed:hover{opacity:1}
+.x-pen{position:absolute;top:10px;right:44px;z-index:3;width:28px;height:28px;border-radius:50%;border:none;background:rgba(11,10,31,.75);color:var(--gold-soft);cursor:pointer;opacity:0;transition:.3s}
+.frame:hover .x-pen{opacity:.9}
+@media(hover:none){.x-pen{opacity:.85}}
+.panel.intro{justify-content:safe center;padding-bottom:110px}
+.bday{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:28px;width:100%;max-width:520px}
+.bd{flex:1;min-width:200px;text-align:center;padding:18px 14px;border-radius:20px;background:var(--neu-base);box-shadow:8px 8px 20px var(--neu-dark),-8px -8px 20px var(--neu-light)}
+.bd .n{font-family:var(--serif);font-size:1.1rem;color:var(--gold-soft)}
+.bd .d{font-family:var(--serif);font-size:2.8rem;color:var(--gold);line-height:1.1;text-shadow:0 0 30px var(--glow)}
+.bd .l{font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--mist)}
+.bd .s{font-size:.78rem;color:var(--mist);margin-top:6px;font-family:var(--serif);font-style:italic}
+.track-btn.x-plus{border-style:dashed;color:var(--gold)}
+#xToast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:9800;background:var(--neu-base);color:var(--gold-soft);border:1px solid rgba(231,200,115,.35);padding:10px 18px;border-radius:99px;font-size:.8rem;letter-spacing:1px;opacity:0;pointer-events:none;transition:.4s;text-align:center}
+#xToast.on{opacity:1}
+@media(max-width:640px){.x-add{width:180px;height:210px}}
+</style>
+<input type="file" id="xPhotoIn" accept="image/*" multiple hidden>
+<input type="file" id="xSongIn" accept="audio/*" hidden>
+<div id="xToast"></div>
+
+<script>
+/* ===== SHARED STORAGE SETTINGS (Supabase). Fill these in so photos & songs are shared with everyone. =====
+   Leave url/key empty and the site still works, but additions stay on the device that added them.
+   See setup-supabase.md for the 10-minute setup. */
+window.CLOUD_CONFIG={ url:"", key:"", bucket:"surprise-media" };
+</script>
+<script>
+(()=>{
+const CLOUD=window.CLOUD_CONFIG||{},BASE=(CLOUD.url||'').replace(/\/$/,''),cloud=!!(BASE&&CLOUD.key);
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$('xToast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2800)};
+const why=e=>String((e&&e.message)||e).slice(0,90);
+
+/* --- in-page dialog (replaces browser prompt/confirm, which can be blocked) --- */
+const modal=document.createElement('div');modal.id='xModal';document.body.appendChild(modal);
+function ask(title,fields){return new Promise(res=>{
+  modal.innerHTML='<div class="xform"><h4></h4><div class="xf"></div><div class="xb"><button type="button" class="xc">Cancel</button><button type="button" class="xo">OK</button></div></div>';
+  const f=modal.firstChild;f.querySelector('h4').textContent=title;
+  const box=f.querySelector('.xf');
+  const ins=(fields||[]).map(([l,v])=>{const lab=document.createElement('label');lab.textContent=l;const i=document.createElement('input');i.value=v||'';lab.appendChild(i);box.appendChild(lab);return i});
+  const done=v=>{modal.classList.remove('on');res(v)};
+  const ok=()=>done(ins.map(i=>i.value.trim()));f.querySelector('.xo').onclick=ok;ins.forEach(i=>i.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')ok();if(e.key==='Escape')done(null)});
+  f.querySelector('.xc').onclick=()=>done(null);
+  modal.classList.add('on');
+  if(ins[0]){ins[0].focus();ins[0].select()}else f.querySelector('.xo').focus();
+})}
+
+/* --- local store (used only when no shared storage is configured) --- */
+const open=()=>new Promise((res,rej)=>{const r=indexedDB.open('surpriseExtras',1);r.onupgradeneeded=()=>r.result.createObjectStore('items',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(mode,fn)=>{const db=await open();return new Promise((res,rej)=>{const t=db.transaction('items',mode);const r=fn(t.objectStore('items'));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})};
+const put=i=>tx('readwrite',s=>s.put(i)),del=id=>tx('readwrite',s=>s.delete(id)),all=()=>tx('readonly',s=>s.getAll());
+if(!cloud&&navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+
+/* --- storage layer: shared cloud (Supabase REST) or local fallback --- */
+const H=(x)=>Object.assign({apikey:CLOUD.key},String(CLOUD.key).startsWith('eyJ')?{Authorization:'Bearer '+CLOUD.key}:{},x||{});
+const ROWS=BASE+'/rest/v1/items',OBJ=BASE+'/storage/v1/object/'+(CLOUD.bucket||'surprise-media');
+const pub=p=>BASE+'/storage/v1/object/public/'+(CLOUD.bucket||'surprise-media')+'/'+p;
+async function J(r){const t=await r.text();if(!r.ok)throw new Error(t||r.status);return t?JSON.parse(t):null}
+let gen=0;
+const api={
+  async list(){
+    if(!cloud)return((await all())||[]).sort((a,b)=>a.id-b.id);
+    const rows=await J(await fetch(ROWS+'?select=*&order=created_at.asc,id.asc',{headers:H()}));
+    return rows.map(r=>Object.assign(r,{url:pub(r.path)}));
+  },
+  async create(it,blob){
+    gen++;
+    if(!cloud){it.id=Date.now()+Math.random();it.blob=blob;await put(it);return it}
+    const ext=it.kind==='photo'?'jpg':(((blob.name||'').split('.').pop()||'mp3').toLowerCase().replace(/[^a-z0-9]/g,'')||'mp3');
+    const path=it.kind+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+    const up=await fetch(OBJ+'/'+path,{method:'POST',headers:H({'Content-Type':blob.type||'application/octet-stream','x-upsert':'false'}),body:blob});
+    if(!up.ok)throw new Error(await up.text());
+    const row={kind:it.kind,path,caption:it.caption||null,date:it.date||null,title:it.title||null,artist:it.artist||null,note:it.note||null};
+    const r=await J(await fetch(ROWS,{method:'POST',headers:H({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify(row)}));
+    return Object.assign(r[0],{url:pub(path)});
+  },
+  async update(it){
+    gen++;
+    if(!cloud)return put(it);
+    await J(await fetch(ROWS+'?id=eq.'+it.id,{method:'PATCH',headers:H({'Content-Type':'application/json'}),body:JSON.stringify({caption:it.caption,date:it.date,title:it.title,artist:it.artist,note:it.note})}));
+  },
+  async remove(it){
+    gen++;
+    if(!cloud)return del(it.id);
+    await J(await fetch(ROWS+'?id=eq.'+it.id,{method:'DELETE',headers:H()}));
+    fetch(OBJ+'/'+it.path,{method:'DELETE',headers:H()}).catch(()=>{});
+  }
+};
+const src=it=>it.url||URL.createObjectURL(it.blob);
+const shown=new Map();   // id -> {update(item), destroy()}
+
+/* --- PHOTOS --- */
+const row=document.querySelector('.film-row');
+const addF=document.createElement('div');addF.className='x-add';addF.innerHTML='<div>＋</div><span>Add a memory</span>';
+row.appendChild(addF);addF.onclick=()=>$('xPhotoIn').click();
+
+async function shrink(f){try{const b=await createImageBitmap(f),k=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=b.width*k;c.height=b.height*k;c.getContext('2d').drawImage(b,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,'image/jpeg',.86))}catch(e){return f}}
+
+function photoFrame(it){
+  const d=document.createElement('div');d.className='frame';
+  d.innerHTML='<img alt=""><button class="x-del" title="Remove">✕</button><button class="x-pen" title="Edit">✎</button><div class="meta"><div class="cap"></div><div class="dt"></div></div>';
+  d.querySelector('img').src=src(it);
+  const paint=()=>{d.querySelector('.cap').textContent=it.caption||'';d.querySelector('.dt').textContent=it.date||''};paint();
+  d.querySelector('.x-del').onclick=async e=>{e.stopPropagation();if(!(await ask('Remove this photo?',[])))return;
+    try{await api.remove(it)}catch(err){toast("Couldn't remove: "+why(err));return}
+    shown.delete(it.id);d.remove()};
+  d.querySelector('.x-pen').onclick=async e=>{e.stopPropagation();
+    const v=await ask('Edit this memory',[['Caption',it.caption],['Date or note',it.date]]);if(!v)return;
+    it.caption=v[0]||it.caption;it.date=v[1]||it.date;paint();
+    try{await api.update(it);toast('Saved ✦')}catch(err){toast("Couldn't save: "+why(err))}};
+  shown.set(it.id,{update(n){it.caption=n.caption;it.date=n.date;paint()},destroy(){d.remove()}});
+  row.insertBefore(d,addF);
+}
+$('xPhotoIn').onchange=async e=>{
+  const today=new Date().toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});
+  let n=0;
+  for(const f of e.target.files){
+    const blob=await shrink(f);
+    const v=await ask('Add this memory',[['Caption','A new memory 💖'],['Date or note',today]]);
+    const it={kind:'photo',caption:(v&&v[0])||'A new memory 💖',date:(v&&v[1])||today};
+    toast(cloud?'Uploading…':'Saving…');
+    try{photoFrame(await api.create(it,blob));n++}catch(err){toast('Upload failed: '+why(err))}
+  }
+  e.target.value='';if(n)toast('Memory added ✦');
+};
+
+/* --- SONGS (plug into the existing TRACKS array + switchTrack) --- */
+const sel=document.querySelector('.track-selector');
+const addS=document.createElement('button');addS.className='track-btn x-plus';addS.textContent='＋ Add song';
+sel.appendChild(addS);addS.onclick=()=>$('xSongIn').click();
+
+const orig=window.switchTrack;
+window.switchTrack=function(i){
+  $('audioSource').removeAttribute('type');
+  orig(i);
+  document.querySelectorAll('.track-selector .track-btn[data-x]').forEach(b=>b.classList.toggle('active',+b.dataset.x===i));
+};
+
+function songBtn(it){
+  const idx=TRACKS.push({title:it.title,artist:it.artist,src:src(it),note:it.note})-1,b=document.createElement('button');
+  b.className='track-btn';b.dataset.x=idx;
+  const l=document.createElement('span');
+  const x=document.createElement('span');x.className='x-sx';x.textContent='✕';
+  const p=document.createElement('span');p.className='x-ed';p.textContent='✎';
+  b.append(l,p,x);
+  const apply=()=>{const t=TRACKS[idx];if(!t)return;t.title=it.title;t.artist=it.artist;t.note=it.note;l.textContent=it.title;
+    if(currentTrack===idx){$('songTitle').textContent=it.title;$('songArtist').textContent=it.artist||'';$('songNote').textContent=it.note||''}};
+  l.textContent=it.title;
+  p.onclick=async e=>{e.stopPropagation();const v=await ask('Edit this song',[['Title',it.title],['Artist',it.artist]]);if(!v)return;
+    it.title=v[0]||it.title;it.artist=v[1];apply();
+    try{await api.update(it);toast('Saved 🎵')}catch(err){toast("Couldn't save: "+why(err))}};
+  b.onclick=()=>switchTrack(idx);
+  x.onclick=async e=>{e.stopPropagation();if(!(await ask('Remove this song?',[])))return;
+    try{await api.remove(it)}catch(err){toast("Couldn't remove: "+why(err));return}
+    if(currentTrack===idx)switchTrack(0);
+    TRACKS[idx]=null;shown.delete(it.id);b.remove()};
+  shown.set(it.id,{update(n){it.title=n.title;it.artist=n.artist;it.note=n.note;apply()},destroy(){if(currentTrack===idx)switchTrack(0);TRACKS[idx]=null;b.remove()}});
+  sel.insertBefore(b,addS);
+}
+$('xSongIn').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const v=await ask('Add this song',[['Title',f.name.replace(/\.[^.]+$/,'')],['Artist',''],['Why is this song yours? (optional)','']]);
+  const note=v&&v[2];
+  const it={kind:'song',title:(v&&v[0])||f.name,artist:(v&&v[1])||'',note:note?'"'+note+'"':'"Another song for our soundtrack."'};
+  toast(cloud?'Uploading song…':'Saving…');
+  try{songBtn(await api.create(it,f));toast('Song added 🎵')}catch(err){toast('Upload failed: '+why(err))}
+  e.target.value='';
+};
+
+/* --- load everything, and (shared mode) keep it in sync with what the other person adds --- */
+async function sync(first){
+  const g=gen;let items;
+  try{items=await api.list()}catch(err){if(first)toast(cloud?"Can't reach shared storage":'');return}
+  if(g!==gen)return;                       // something changed while loading; next sync will catch up
+  const ids=new Set(items.map(i=>i.id));
+  items.forEach(it=>{const s=shown.get(it.id);if(s)s.update(it);else it.kind==='photo'?photoFrame(it):songBtn(it)});
+  shown.forEach((s,id)=>{if(!ids.has(id)){s.destroy();shown.delete(id)}});
+}
+sync(true);
+if(cloud){setInterval(()=>{if(!document.hidden)sync(false)},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync(false)})}
+})();
+</script>
+<script>
+(()=>{
+/* ===== BIRTHDAY COUNTDOWN: edit names / dates here (month is 1-12) ===== */
+const BIRTHDAYS=[
+  {name:"Ignitious",day:25,month:12,year:2006},
+  {name:"Kadoli",day:8,month:8,year:2006}
+];
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const host=document.querySelector('.panel.intro');
+const wrap=document.createElement('div');wrap.className='bday';host.appendChild(wrap);
+function render(){
+  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  wrap.innerHTML='';
+  BIRTHDAYS.forEach(p=>{
+    let next=new Date(today.getFullYear(),p.month-1,p.day);
+    if(next<today)next=new Date(today.getFullYear()+1,p.month-1,p.day);
+    const days=Math.round((next-today)/86400000),age=next.getFullYear()-p.year;
+    const c=document.createElement('div');c.className='bd';
+    c.innerHTML='<div class="n"></div><div class="d"></div><div class="l"></div><div class="s"></div>';
+    c.querySelector('.n').textContent=p.name+"'s birthday 🎂";
+    c.querySelector('.d').textContent=days===0?'🎉':days;
+    c.querySelector('.l').textContent=days===0?'Happy birthday!':(days===1?'day to go':'days to go');
+    c.querySelector('.s').textContent=days===0?'Turning '+age+' today':'Turning '+age+' on '+p.day+' '+MON[p.month-1];
+    wrap.appendChild(c);
+  });
+}
+render();setInterval(render,60000);
+})();
+</script>
+<!-- ===== END ADD-ON ===== -->
 </body>
 </html>
