@@ -131,9 +131,9 @@ body{
 
 /* ========= MAIN STAGE (horizontal) ========= */
 #stage{position:fixed;inset:0;z-index:10;display:none}
-#track{display:flex;height:100%;width:700%;
+#track{display:flex;height:100%;width:900%;
   transition:transform 0.6s cubic-bezier(.77,0,.18,1)}
-.panel{width:calc(100%/7);height:100%;overflow-y:auto;overflow-x:hidden;
+.panel{width:calc(100%/9);height:100%;overflow-y:auto;overflow-x:hidden;
   padding:clamp(20px,5vw,70px);display:flex;flex-direction:column;
   align-items:center;justify-content:center;position:relative}
 .panel::-webkit-scrollbar{width:6px}
@@ -472,7 +472,30 @@ body{
       </div>
     </div>
 
-    <!-- 6 · FINALE -->
+    <!-- 6 · FUN WORDS -->
+    <div class="panel xpanel" id="wordsPanel">
+      <div class="kicker">Our little language</div>
+      <h2>Our <em>Words</em></h2>
+      <button class="lnk" id="wWho"></button>
+      <div class="cnote" id="wNote"></div>
+      <div class="wtabs" id="wTabs"></div>
+      <div class="wlist" id="wList"></div>
+      <button class="wadd" id="wAdd">＋ Add a word</button>
+    </div>
+
+    <!-- 7 · CHAT -->
+    <div class="panel xpanel" id="chatPanel">
+      <div class="kicker">Just the two of us</div>
+      <h2>Our <em>Chat</em></h2>
+      <div class="neu chatbox">
+        <button class="lnk" id="cWho"></button>
+        <div class="cnote" id="cNote"></div>
+        <div class="cmsgs" id="cMsgs"></div>
+        <div class="cform"><input id="cIn" placeholder="Write a message…" autocomplete="off" maxlength="1000"><button id="cSend" class="play-btn" aria-label="Send">➤</button></div>
+      </div>
+    </div>
+
+    <!-- 8 · FINALE -->
     <div class="panel">
       <div class="finale">
         <div class="kicker">One last thing…</div>
@@ -592,7 +615,7 @@ function begin(){
 
 /* ================= SITE INIT ================= */
 let currentSlide = 0;
-const TOTAL = 7;
+const TOTAL = 9;
 const track = document.getElementById('track');
 const prev = document.getElementById('prev');
 const next = document.getElementById('next');
@@ -657,7 +680,7 @@ function goTo(i){
   track.style.transform=`translateX(-${i*(100/TOTAL)}%)`;
   prev.disabled = i===0;
   next.disabled = i===TOTAL-1;
-  document.querySelectorAll('.dot').forEach((d,idx)=>d.classList.toggle('active',idx===i));
+  document.querySelectorAll('#dots .dot').forEach((d,idx)=>d.classList.toggle('active',idx===i));
 }
 document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')goTo(currentSlide+1);
@@ -669,7 +692,7 @@ function initSwipe(){
   let startX = null;
   const stage = document.getElementById('stage');
   stage.addEventListener('touchstart',e=>{
-    if(e.touches.length !== 1) return;
+    if(e.touches.length !== 1 || e.target.closest('.film, .chatbox')) return;
     startX = e.touches[0].clientX;
   }, {passive:true});
   stage.addEventListener('touchend',e=>{
@@ -930,6 +953,49 @@ function startAurora(){
 #xToast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:9800;background:var(--neu-base);color:var(--gold-soft);border:1px solid rgba(231,200,115,.35);padding:10px 18px;border-radius:99px;font-size:.8rem;letter-spacing:1px;opacity:0;pointer-events:none;transition:.4s;text-align:center}
 #xToast.on{opacity:1}
 @media(max-width:640px){.x-add{width:180px;height:210px}}
+#dots .dot{position:relative}
+#dots .dot::before{content:'';position:absolute;inset:-9px}
+#final .x-back{position:absolute;top:max(16px,env(safe-area-inset-top,0px));left:16px;padding:10px 20px;border-radius:99px;border:1px solid var(--gold);background:transparent;color:var(--gold);font-family:var(--sans);font-size:.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+#final .x-back:hover{background:var(--gold);color:var(--night)}
+@media(max-width:640px){
+  .arrow{display:flex;top:auto;bottom:16px;transform:none;width:44px;height:44px}
+  .arrow.prev{left:14px}.arrow.next{right:14px}
+}
+.wadd{font-family:var(--sans);letter-spacing:2px;text-transform:uppercase;font-size:.78rem;padding:16px 32px;border-radius:999px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;transition:.35s}
+.wadd:hover{background:var(--gold);color:var(--night);box-shadow:0 0 40px var(--glow)}
+.wadd:active{transform:scale(.95)}
+@media(max-width:360px){#dots{gap:8px;padding:10px 12px}}
+#xModal select{display:block;width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid rgba(231,200,115,.3);background:var(--neu-dark);color:var(--starlight);font-family:var(--sans);font-size:1rem;outline:none}
+.xpanel{justify-content:safe center;padding-bottom:110px}
+.lnk{background:none;border:none;color:var(--gold-soft);font-family:var(--sans);font-size:.72rem;letter-spacing:1.5px;cursor:pointer;padding:6px 10px;text-decoration:underline;text-underline-offset:3px;margin-bottom:6px}
+.lnk#wWho,.lnk#cWho{border:1px solid rgba(231,200,115,.45);border-radius:99px;text-decoration:none;padding:7px 16px;margin-bottom:10px}
+.lnk#wWho:hover,.lnk#cWho:hover{background:rgba(231,200,115,.12)}
+.cnote{font-size:.72rem;color:var(--gold-soft);text-align:center;font-style:italic;margin-bottom:10px;max-width:420px}
+.cnote:empty{display:none}
+.wtabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:6px 0 18px}
+.wlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px;width:100%;max-width:760px;margin-bottom:24px}
+.wc{position:relative;padding:18px;border-radius:20px;background:var(--neu-base);box-shadow:8px 8px 20px var(--neu-dark),-8px -8px 20px var(--neu-light)}
+.wc .w{font-family:var(--serif);font-size:1.7rem;color:var(--gold-soft);line-height:1.1;padding-right:44px;overflow-wrap:anywhere}
+.wc .m{font-family:var(--serif);font-style:italic;color:var(--mist);margin-top:6px;font-size:1rem}
+.wc .a{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-top:10px}
+.wc .acts{position:absolute;top:10px;right:10px;display:flex}
+.wc .acts button{background:none;border:none;color:var(--gold-soft);cursor:pointer;padding:6px 7px;opacity:.75;font-size:1rem}
+.wc .acts button:hover{opacity:1}
+.wempty{color:var(--mist);font-style:italic;text-align:center;grid-column:1/-1;padding:14px}
+.chatbox{display:flex;flex-direction:column;height:min(62vh,540px);padding:16px;max-width:560px;align-items:stretch}
+.chatbox .lnk{align-self:center}
+.cmsgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px}
+.msg{position:relative;max-width:80%;padding:9px 13px;border-radius:16px;font-size:.98rem;line-height:1.4;overflow-wrap:anywhere}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,var(--gold-soft),var(--gold));color:var(--night);border-bottom-right-radius:4px;padding-right:26px}
+.msg.them{align-self:flex-start;background:var(--neu-dark);border:1px solid rgba(231,200,115,.2);border-bottom-left-radius:4px}
+.msg small{display:block;font-size:.62rem;opacity:.65;margin-top:3px}
+.msg .mdel{position:absolute;top:4px;right:6px;background:none;border:none;color:var(--night);opacity:.4;cursor:pointer;font-size:.8rem;padding:2px 4px}
+.msg .mdel:hover{opacity:.9}
+.dsep{align-self:center;font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:var(--mist);margin:8px 0 2px}
+.cform{display:flex;gap:10px;margin-top:12px;align-items:center}
+.cform input{flex:1;min-width:0;padding:12px 16px;border-radius:99px;border:1px solid rgba(231,200,115,.3);background:var(--neu-dark);color:var(--starlight);font-family:var(--sans);font-size:1rem;outline:none}
+.cform input:focus{border-color:var(--gold)}
+.cform .play-btn:disabled{opacity:.5}
 </style>
 <input type="file" id="xPhotoIn" accept="image/*" multiple hidden>
 <input type="file" id="xSongIn" accept="audio/*" hidden>
@@ -1124,6 +1190,215 @@ function render(){
   });
 }
 render();setInterval(render,60000);
+})();
+</script>
+<script>
+(()=>{
+/* ===== FUN WORDS + CHAT. Edit the two names here (they must match who you are in the site) ===== */
+const NAMES=['Ignitious','Kadoli'];
+const CATS={favourite:['❤️','Favourite words'],misspelled:['😂','Misspelled words'],fun:['✨','Fun words']};
+/* ================================================================================================ */
+const CLOUD=window.CLOUD_CONFIG||{},BASE=(CLOUD.url||'').replace(/\/$/,''),cloud=!!(BASE&&CLOUD.key);
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$('xToast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2800)};
+const why=e=>String((e&&e.message)||e).slice(0,90);
+const H=x=>Object.assign({apikey:CLOUD.key},String(CLOUD.key).startsWith('eyJ')?{Authorization:'Bearer '+CLOUD.key}:{},x||{});
+async function J(r){const t=await r.text();if(!r.ok)throw new Error(t||r.status);return t?JSON.parse(t):null}
+
+/* --- data layer: shared (Supabase) or this device only --- */
+const lopen=()=>new Promise((res,rej)=>{const r=indexedDB.open('surpriseTalk',1);r.onupgradeneeded=()=>{r.result.createObjectStore('words',{keyPath:'id'});r.result.createObjectStore('messages',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const ltx=async(st,mode,fn)=>{const d=await lopen();return new Promise((res,rej)=>{const t=d.transaction(st,mode);const r=fn(t.objectStore(st));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})};
+const db={
+  async list(t,limit){
+    if(cloud){const q=t==='messages'?'?select=*&order=id.desc&limit='+limit:'?select=*&order=id.asc';const rows=await J(await fetch(BASE+'/rest/v1/'+t+q,{headers:H()}));return t==='messages'?rows.reverse():rows}
+    const a=((await ltx(t,'readonly',s=>s.getAll()))||[]).sort((x,y)=>x.id-y.id);return t==='messages'?a.slice(-limit):a},
+  async add(t,row){
+    if(cloud)return (await J(await fetch(BASE+'/rest/v1/'+t,{method:'POST',headers:H({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify(row)})))[0];
+    const o=Object.assign({},row,{id:Date.now()*10+Math.floor(Math.random()*10),created_at:new Date().toISOString()});await ltx(t,'readwrite',s=>s.put(o));return o},
+  async upd(t,id,patch){
+    if(cloud){await J(await fetch(BASE+'/rest/v1/'+t+'?id=eq.'+id,{method:'PATCH',headers:H({'Content-Type':'application/json'}),body:JSON.stringify(patch)}));return}
+    const o=await ltx(t,'readonly',s=>s.get(id));if(o)await ltx(t,'readwrite',s=>s.put(Object.assign(o,patch)))},
+  async del(t,id){
+    if(cloud){await J(await fetch(BASE+'/rest/v1/'+t+'?id=eq.'+id,{method:'DELETE',headers:H()}));return}
+    await ltx(t,'readwrite',s=>s.delete(id))}
+};
+
+/* --- dialogs (in-page; browser pop-ups can be blocked) --- */
+const modal=$('xModal');
+function dlg(title,fields,okText){return new Promise(res=>{
+  modal.innerHTML='<div class="xform"><h4></h4><div class="xf"></div><div class="xb"><button type="button" class="xc">Cancel</button><button type="button" class="xo"></button></div></div>';
+  const f=modal.firstChild;f.querySelector('h4').textContent=title;f.querySelector('.xo').textContent=okText||'OK';
+  const box=f.querySelector('.xf');
+  const ins=(fields||[]).map(F=>{const lab=document.createElement('label');lab.textContent=F.l;let i;
+    if(F.opts){i=document.createElement('select');F.opts.forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;i.appendChild(o)});i.value=F.v}
+    else{i=document.createElement('input');i.value=F.v||'';i.maxLength=200}
+    lab.appendChild(i);box.appendChild(lab);return i});
+  const done=v=>{modal.classList.remove('on');res(v)};
+  const ok=()=>done(ins.map(i=>i.value.trim()));
+  f.querySelector('.xo').onclick=ok;f.querySelector('.xc').onclick=()=>done(null);
+  ins.forEach(i=>i.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'&&i.tagName==='INPUT')ok();if(e.key==='Escape')done(null)});
+  modal.classList.add('on');(ins[0]||f.querySelector('.xo')).focus();
+})}
+function chooseWho(){return new Promise(res=>{
+  modal.innerHTML='<div class="xform"><h4>Who are you?</h4><div class="xb" style="flex-direction:column"></div></div>';
+  const b=modal.querySelector('.xb'),fin=v=>{modal.classList.remove('on');res(v)};
+  NAMES.forEach(n=>{const x=document.createElement('button');x.type='button';x.className='xo';x.textContent=n;x.onclick=()=>fin(n);b.appendChild(x)});
+  const c=document.createElement('button');c.type='button';c.className='xc';c.textContent='Cancel';c.onclick=()=>fin(null);b.appendChild(c);
+  modal.classList.add('on');
+})}
+
+/* --- who am I (remembered on this device) --- */
+let me=null;try{me=localStorage.getItem('surpriseWho')}catch(_){}
+if(!NAMES.includes(me))me=null;
+function paintWho(){const t=me?'You are '+me+' · not you? Switch':'Tap here to choose who you are';$('wWho').textContent=t;$('cWho').textContent=t}
+let mine={w:[],m:[]};try{const x=JSON.parse(localStorage.getItem('surpriseMine')||'');if(x&&x.w&&x.m)mine=x}catch(_){}
+const saveMine=()=>{try{localStorage.setItem('surpriseMine',JSON.stringify(mine))}catch(_){}};
+async function moveMine(from,to){
+  let moved=0;
+  for(const [t,ids,list] of [['words',mine.w,words],['messages',mine.m,msgs]]){
+    for(const id of ids){const row=list.find(x=>x.id===id);
+      if(row&&row.author===from){try{await db.upd(t,id,{author:to});row.author=to;moved++}catch(e){}}}
+  }
+  wsig=JSON.stringify(words);csig=sigOf(msgs);
+  if(moved)toast('Moved '+moved+' to '+to+' ✦');
+}
+async function pickWho(){
+  const n=await chooseWho();if(!n||n===me)return me;
+  if(me){
+    const v=await dlg('Switch to '+n+'?',[{l:'Move the words and messages added on this device as '+me+' over to '+n+'?',opts:[['yes','Yes, those were mine'],['no','No, leave them as '+me]],v:'yes'}],'Switch');
+    if(!v)return me;
+    if(v[0]==='yes')await moveMine(me,n);
+  }
+  me=n;try{localStorage.setItem('surpriseWho',n)}catch(_){}
+  paintWho();renderWords();renderChat(false);return me;
+}
+async function ensureWho(){return me||pickWho()}
+$('wWho').onclick=pickWho;$('cWho').onclick=pickWho;paintWho();
+const note=cloud?'':"Shared storage isn't connected yet, so this stays on this device only.";
+$('wNote').textContent=note;$('cNote').textContent=cloud?'':note;
+
+/* --- FUN WORDS --- */
+let words=[],tab='all',wsig='';
+function renderWords(){
+  const tabs=$('wTabs');tabs.innerHTML='';
+  [['all','All ✦']].concat(Object.keys(CATS).map(k=>[k,CATS[k][0]+' '+CATS[k][1]])).forEach(([k,t])=>{
+    const b=document.createElement('button');b.className='track-btn'+(tab===k?' active':'');b.textContent=t;b.onclick=()=>{tab=k;renderWords()};tabs.appendChild(b)});
+  const list=$('wList');list.innerHTML='';
+  const rows=words.filter(w=>tab==='all'||w.category===tab).slice().reverse();
+  if(!rows.length){const e=document.createElement('div');e.className='wempty';e.textContent='No words here yet. Add the first one ✦';list.appendChild(e)}
+  rows.forEach(w=>{
+    const c=document.createElement('div');c.className='wc';
+    const wd=document.createElement('div');wd.className='w';wd.textContent=w.word;c.appendChild(wd);
+    if(w.meaning){const m=document.createElement('div');m.className='m';m.textContent=w.meaning;c.appendChild(m)}
+    const a=document.createElement('div');a.className='a';a.textContent=((CATS[w.category]||['✨'])[0])+' '+(w.author||'');c.appendChild(a);
+    if(me&&w.author===me){
+      const acts=document.createElement('div');acts.className='acts';
+      const ed=document.createElement('button');ed.textContent='✎';ed.title='Edit';ed.onclick=()=>editWord(w);
+      const rm=document.createElement('button');rm.textContent='✕';rm.title='Delete';rm.onclick=()=>delWord(w);
+      acts.append(ed,rm);c.appendChild(acts)}
+    list.appendChild(c)});
+}
+const catOpts=Object.keys(CATS).map(k=>[k,CATS[k][0]+' '+CATS[k][1]]);
+async function addWord(){
+  if(!await ensureWho())return;
+  const v=await dlg('Add a word',[{l:'The word',v:''},{l:'What it means / the story (optional)',v:''},{l:'Kind of word',opts:catOpts,v:CATS[tab]?tab:'fun'}],'Add');
+  if(!v||!v[0])return;
+  try{const r=await db.add('words',{author:me,category:v[2],word:v[0],meaning:v[1]||null});words.push(r);mine.w.push(r.id);saveMine();wsig=JSON.stringify(words);renderWords();toast('Word added ✦')}
+  catch(e){toast("Couldn't add: "+why(e))}
+}
+async function editWord(w){
+  const v=await dlg('Edit this word',[{l:'The word',v:w.word},{l:'What it means / the story (optional)',v:w.meaning||''},{l:'Kind of word',opts:catOpts,v:w.category}],'Save');
+  if(!v||!v[0])return;
+  const p={word:v[0],meaning:v[1]||null,category:v[2]};
+  try{await db.upd('words',w.id,p);Object.assign(w,p);wsig=JSON.stringify(words);renderWords();toast('Saved ✦')}
+  catch(e){toast("Couldn't save: "+why(e))}
+}
+async function delWord(w){
+  if(!(await dlg('Delete "'+w.word+'"?',[],'Delete')))return;
+  try{await db.del('words',w.id);words=words.filter(x=>x.id!==w.id);wsig=JSON.stringify(words);renderWords();toast('Deleted')}
+  catch(e){toast("Couldn't delete: "+why(e))}
+}
+$('wAdd').onclick=addWord;
+async function refreshWords(){try{const r=await db.list('words');const s=JSON.stringify(r);if(s!==wsig){wsig=s;words=r;renderWords()}}catch(e){}}
+
+/* --- CHAT --- */
+let msgs=[],limit=300,csig='',seenMax=null;
+const sigOf=a=>a.map(m=>m.id+':'+m.author).join(',');
+const day=d=>d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+function renderChat(stick){
+  const box=$('cMsgs'),near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
+  box.innerHTML='';
+  if(msgs.length>=limit){const b=document.createElement('button');b.className='lnk';b.textContent='Earlier messages';b.onclick=()=>{limit+=300;refreshChat(false)};box.appendChild(b)}
+  if(!msgs.length){const e=document.createElement('div');e.className='wempty';e.textContent='Say hello 💌';box.appendChild(e)}
+  let last='';
+  msgs.forEach(m=>{
+    const d=new Date(m.created_at),k=d.toDateString();
+    if(k!==last){last=k;const s=document.createElement('div');s.className='dsep';s.textContent=day(d);box.appendChild(s)}
+    const el=document.createElement('div');el.className='msg '+(me&&m.author===me?'me':'them');
+    const t=document.createElement('span');t.textContent=m.body;el.appendChild(t);
+    const sm=document.createElement('small');sm.textContent=(me&&m.author===me?'':m.author+' · ')+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});el.appendChild(sm);
+    if(me&&m.author===me){const x=document.createElement('button');x.className='mdel';x.textContent='✕';x.title='Delete message';x.onclick=()=>delMsg(m);el.appendChild(x)}
+    box.appendChild(el)});
+  if(stick||near)box.scrollTop=box.scrollHeight;
+}
+async function refreshChat(stick){
+  try{
+    const r=await db.list('messages',limit);const s=sigOf(r);
+    if(s===csig){if(stick)renderChat(true);return}
+    const top=r.length?r[r.length-1].id:0;
+    if(seenMax!==null&&top>seenMax){const n=r.filter(m=>m.id>seenMax&&m.author!==me).pop();if(n&&currentSlide!==7)toast('💬 New message from '+n.author)}
+    seenMax=Math.max(seenMax||0,top);csig=s;msgs=r;renderChat(stick);
+  }catch(e){}
+}
+async function send(){
+  const inp=$('cIn'),t=inp.value.trim();if(!t)return;
+  if(!await ensureWho())return;
+  $('cSend').disabled=true;
+  try{const r=await db.add('messages',{author:me,body:t});msgs.push(r);mine.m.push(r.id);saveMine();csig=sigOf(msgs);seenMax=Math.max(seenMax||0,r.id);inp.value='';renderChat(true)}
+  catch(e){toast("Couldn't send: "+why(e))}
+  $('cSend').disabled=false;inp.focus();
+}
+async function delMsg(m){
+  if(!(await dlg('Delete this message?',[],'Delete')))return;
+  try{await db.del('messages',m.id);msgs=msgs.filter(x=>x.id!==m.id);csig=sigOf(msgs);renderChat(false)}
+  catch(e){toast("Couldn't delete: "+why(e))}
+}
+$('cSend').onclick=send;
+$('cIn').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();send()}};
+
+/* --- go --- */
+renderWords();renderChat(true);refreshWords();refreshChat(true);
+if(cloud){
+  setInterval(()=>{if(!document.hidden)refreshChat(false)},4000);
+  setInterval(()=>{if(!document.hidden)refreshWords()},12000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshChat(false);refreshWords()}});
+}
+const og=window.goTo;
+window.goTo=function(i){og(i);if(i===7)setTimeout(()=>refreshChat(true),60);if(i===6)refreshWords()};
+})();
+</script>
+<script>
+(()=>{
+/* ===== NAVIGATION FIXES: browser Back/Forward move between screens; finale has a way back ===== */
+const fin=document.getElementById('final'),aura=document.getElementById('aura');
+let fromPop=false,auroraOn=false;
+history.replaceState({s:0},'');
+const og=window.goTo;
+window.goTo=function(i){const before=currentSlide;og(i);if(currentSlide!==before&&!fromPop)history.pushState({s:currentSlide},'','#'+currentSlide)};
+const of=window.finale;
+window.finale=function(){
+  if(!auroraOn){of();auroraOn=true}else{fin.classList.add('show');aura.classList.add('show')}
+  history.pushState({s:currentSlide,f:1},'');
+};
+function closeFinale(){fin.classList.remove('show');aura.classList.remove('show')}
+addEventListener('popstate',e=>{
+  const st=e.state||{s:0};
+  if(!st.f)closeFinale();
+  if(typeof st.s==='number'){fromPop=true;window.goTo(st.s);fromPop=false}
+});
+const back=document.createElement('button');back.className='x-back';back.textContent='← Back';
+back.onclick=()=>{if(history.state&&history.state.f)history.back();else closeFinale()};
+fin.appendChild(back);
 })();
 </script>
 <!-- ===== END ADD-ON ===== -->
