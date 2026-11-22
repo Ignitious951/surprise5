@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>For You ✦</title>
+<meta name="description" content="A private love website for Ignitious and Kadoli.">
+<meta name="theme-color" content="#0b0a1f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Our Universe">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 /* ========= CONFIG / EDIT HERE ========= */
@@ -1275,7 +1284,7 @@ async function pickWho(){
     if(v[0]==='yes')await moveMine(me,n);
   }
   me=n;try{localStorage.setItem('surpriseWho',n)}catch(_){}
-  paintWho();renderWords();renderChat(false);return me;
+  paintWho();renderWords();renderChat(false);if(pushOn)enablePush(false);return me;
 }
 async function ensureWho(){return me||pickWho()}
 $('wWho').onclick=pickWho;$('cWho').onclick=pickWho;paintWho();
@@ -1307,7 +1316,7 @@ function announce(evs){
   const txt=first.text+(evs.length>1?'  (+'+(evs.length-1)+' more)':'');
   if(!here||!adds)showBanner(txt,first.panel);
   if(document.hidden){unread+=evs.length;document.title='('+unread+') '+baseTitle;
-    try{if('Notification' in window&&Notification.permission==='granted')new Notification('Our little universe',{body:txt})}catch(_){}}
+    try{if(!pushOn&&'Notification' in window&&Notification.permission==='granted')new Notification('Our little universe',{body:txt})}catch(_){}}
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){unread=0;document.title=baseTitle}});
 function diffWords(prev,next){
@@ -1323,9 +1332,40 @@ function diffMsgs(prev,next){
   return ev}
 const bell=document.createElement('button');bell.id='bell';bell.type='button';
 const paintBell=()=>{bell.textContent=soundOn?'🔔':'🔕';bell.title=soundOn?'Notifications on (tap to mute)':'Muted (tap to turn on)'};paintBell();
-bell.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem('surpriseSound',soundOn?'on':'off')}catch(_){}paintBell();unlock();
-  if(soundOn){chime('word');try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(_){}toast('Notifications on 🔔')}else toast('Muted 🔕')};
+bell.onclick=async()=>{soundOn=!soundOn;try{localStorage.setItem('surpriseSound',soundOn?'on':'off')}catch(_){}paintBell();unlock();
+  if(soundOn){chime('word');
+    if(pushSupported()){const ok=await enablePush(true);if(ok)toast('Phone notifications on 🔔');else if(Notification.permission!=='denied')toast('Notifications on 🔔')}
+    else{try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(_){}toast('Notifications on 🔔')}}
+  else{await disablePush();toast('Muted 🔕')}};
 $('stage').appendChild(bell);
+/* --- PHONE PUSH: notifications even when the app is closed (needs the one-time server setup) --- */
+const PUSH_KEY='BK281q_4meQAJQAEJssGDin_00H9FUHM0iiPVxsnLiXs1lebUTmwXABOpCmAJMRTfowKYuSU5G73PDHKJvLpNWY';
+let pushOn=false;
+const u8=b=>{const s=(b+'='.repeat((4-b.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'),r=atob(s);return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+const pushSupported=()=>!!(cloud&&PUSH_KEY&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window);
+async function pushSave(sub,who){
+  const j=sub.toJSON();
+  await J(await fetch(BASE+'/rest/v1/push_subscriptions?on_conflict=endpoint',{method:'POST',headers:H({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'}),body:JSON.stringify({who,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth})}));
+}
+async function enablePush(ask){
+  if(!pushSupported())return false;
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)){if(ask)toast('On iPhone: add the site to your Home Screen first, then turn this on');return false}
+  if(Notification.permission==='denied'){if(ask)toast('Notifications are blocked in your browser settings');return false}
+  if(Notification.permission==='default'){if(!ask)return false;const r=await Notification.requestPermission();if(r!=='granted')return false}
+  const who=await ensureWho();if(!who)return false;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const sub=(await reg.pushManager.getSubscription())||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH_KEY)});
+    await pushSave(sub,who);pushOn=true;return true
+  }catch(e){if(ask)toast("Couldn't turn on phone notifications: "+why(e));return false}
+}
+async function disablePush(){
+  pushOn=false;
+  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();
+    if(sub){const ep=sub.endpoint;await sub.unsubscribe();await fetch(BASE+'/rest/v1/push_subscriptions?endpoint=eq.'+encodeURIComponent(ep),{method:'DELETE',headers:H()})}}catch(_){}
+}
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',e=>{const m=e.data&&/#(\d)/.exec(e.data.go||'');if(m)window.goTo(+m[1])});
+
 let wReady=false,cReady=false;
 
 /* --- FUN WORDS --- */
@@ -1419,6 +1459,7 @@ $('cIn').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault(
 
 /* --- go --- */
 renderWords();renderChat(true);refreshWords();refreshChat(true);
+setTimeout(()=>{if(soundOn&&me&&pushSupported()&&Notification.permission==='granted')enablePush(false)},1500);
 if(cloud){
   setInterval(()=>refreshChat(false),4000);
   setInterval(()=>refreshWords(),6000);
@@ -1451,6 +1492,12 @@ const back=document.createElement('button');back.className='x-back';back.textCon
 back.onclick=()=>{if(history.state&&history.state.f)history.back();else closeFinale()};
 fin.appendChild(back);
 })();
+</script>
+<script>
+/* Lets the site install as an app (works once it is online at an https address) */
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+}
 </script>
 <!-- ===== END ADD-ON ===== -->
 </body>
