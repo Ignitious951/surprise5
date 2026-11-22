@@ -9,6 +9,7 @@
 /* ========= CONFIG / EDIT HERE ========= */
 :root{
   --her-name:"Diana (kadoli😍🥰)";
+  --gold:#e7c873;
   --my-name:"Ignitious";
   --start-date:"2026-08-16";   /* ← Set to match your 98 days (Nov 22 - Aug 16) */
   --song1-title:"All I Ever Need";
@@ -20,7 +21,6 @@
   --night:#0b0a1f;
   --night-2:#141033;
   --plum:#2a1e45;
-  --gold:#e7c873;
   --gold-soft:#f6e3a8;
   --starlight:#f4f1ff;
   --mist:#a9a3c9;
@@ -319,9 +319,50 @@ body{
   .intro .clock{gap:8px}
   .intro .clock strong{font-size:1.1rem}
 }
+/* ========= PASSWORD SCREEN ========= */
+#password-screen {
+  position: fixed; inset: 0; z-index: 20000;
+  background: var(--night);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; transition: opacity 0.8s ease;
+}
+#password-screen.unlocked { opacity: 0; pointer-events: none; }
+.lock-icon { font-size: 3rem; color: var(--gold); margin-bottom: 20px; animation: pulseLock 2s infinite; }
+@keyframes pulseLock { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); text-shadow: 0 0 20px var(--glow); } }
+#password-screen h2 { font-family: var(--serif); font-size: 2rem; color: var(--gold-soft); margin-bottom: 10px; }
+#password-screen p { color: var(--mist); margin-bottom: 30px; font-size: 0.95rem; letter-spacing: 1px; }
+.pass-input-wrapper { position: relative; width: 100%; max-width: 300px; margin-bottom: 20px; }
+#password-input {
+  width: 100%; padding: 16px 20px; border-radius: 99px;
+  background: var(--neu-base); border: 1px solid rgba(231,200,115,.3);
+  color: var(--starlight); font-family: var(--sans); font-size: 1rem; text-align: center;
+  outline: none; transition: 0.3s; letter-spacing: 2px;
+}
+#password-input::placeholder { color: var(--mist); font-size: 0.85rem; letter-spacing: 1px; }
+#password-input:focus { border-color: var(--gold); box-shadow: 0 0 20px var(--glow); }
+.unlock-btn {
+  padding: 12px 40px; border-radius: 99px; border: 1px solid var(--gold);
+  background: transparent; color: var(--gold); font-family: var(--sans); font-size: 0.8rem;
+  letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: 0.3s;
+}
+.unlock-btn:hover { background: var(--gold); color: var(--night); box-shadow: 0 0 30px var(--glow); }
+.error-msg { color: #ff6b6b; font-size: 0.8rem; margin-top: 10px; opacity: 0; transition: 0.3s; }
+.error-msg.show { opacity: 1; animation: shake 0.4s ease; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 </style>
 </head>
 <body>
+<!-- ========= PASSWORD SCREEN ========= -->
+<div id="password-screen">
+  <div class="lock-icon">🔒</div>
+  <h2>A Secret World Awaits</h2>
+  <p>Enter the secret code to enter.</p>
+  <div class="pass-input-wrapper">
+    <input type="password" id="password-input" placeholder="••••••••" autocomplete="off">
+  </div>
+  <button class="unlock-btn" onclick="checkPassword()">Unlock</button>
+  <div class="error-msg" id="error-msg">Incorrect code. Try again.</div>
+</div>
 
 <!-- STARFIELD -->
 <div id="stars"><canvas></canvas></div>
@@ -513,6 +554,36 @@ const TRACKS = [
   }
 ];
 let currentTrack = 0;
+
+/* ================= PASSWORD LOGIC ================= */
+// CHANGE THIS TO YOUR SECRET CODE
+const SECRET_CODE = "Ign-kadoli"; 
+
+function checkPassword() {
+  const input = document.getElementById('password-input').value.trim().toLowerCase();
+  const screen = document.getElementById('password-screen');
+  const error = document.getElementById('error-msg');
+  
+  if (input === SECRET_CODE) {
+    screen.classList.add('unlocked');
+    // Optional: Save to session storage so she doesn't have to re-enter if she refreshes
+    sessionStorage.setItem('surpriseUnlocked', 'true');
+  } else {
+    error.classList.add('show');
+    document.getElementById('password-input').value = '';
+    setTimeout(() => { error.classList.remove('show'); }, 2000);
+  }
+}
+
+// Allow hitting "Enter" to submit
+document.getElementById('password-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') checkPassword();
+});
+
+// Check if already unlocked this session
+if (sessionStorage.getItem('surpriseUnlocked') === 'true') {
+  document.getElementById('password-screen').classList.add('unlocked');
+}
 
 /* ================= STARFIELD ================= */
 const canvas = document.querySelector('#stars canvas');
