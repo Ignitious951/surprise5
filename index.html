@@ -965,6 +965,10 @@ function startAurora(){
 .wadd:hover{background:var(--gold);color:var(--night);box-shadow:0 0 40px var(--glow)}
 .wadd:active{transform:scale(.95)}
 @media(max-width:360px){#dots{gap:8px;padding:10px 12px}}
+#xNotif{position:fixed;top:max(14px,env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);z-index:9850;max-width:min(92vw,420px);padding:12px 18px;border-radius:16px;background:var(--neu-base);border:1px solid rgba(231,200,115,.5);color:var(--gold-soft);box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 30px var(--glow);font-family:var(--serif);font-size:1.05rem;transition:transform .5s;cursor:pointer;overflow-wrap:anywhere}
+#xNotif.on{transform:translate(-50%,0)}
+#bell{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:14px;z-index:30;width:42px;height:42px;border-radius:50%;border:1px solid rgba(231,200,115,.4);background:rgba(20,16,51,.55);backdrop-filter:blur(8px);cursor:pointer;font-size:1.1rem;line-height:1}
+#bell:hover{background:rgba(231,200,115,.18)}
 #xModal select{display:block;width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid rgba(231,200,115,.3);background:var(--neu-dark);color:var(--starlight);font-family:var(--sans);font-size:1rem;outline:none}
 .xpanel{justify-content:safe center;padding-bottom:110px}
 .lnk{background:none;border:none;color:var(--gold-soft);font-family:var(--sans);font-size:.72rem;letter-spacing:1.5px;cursor:pointer;padding:6px 10px;text-decoration:underline;text-underline-offset:3px;margin-bottom:6px}
@@ -1005,7 +1009,7 @@ function startAurora(){
 /* ===== SHARED STORAGE SETTINGS (Supabase). Fill these in so photos & songs are shared with everyone. =====
    Leave url/key empty and the site still works, but additions stay on the device that added them.
    See setup-supabase.md for the 10-minute setup. */
-window.CLOUD_CONFIG={ url:"https://swpaijduwpvkrhoswikw.supabase.co", key:"sb_publishable_RieOf_KpVhcOeleeTUF7qg_N9v04f_W", bucket:"surprise-media" };
+window.CLOUD_CONFIG={ url:"", key:"", bucket:"surprise-media" };
 (function(c){c.url=String(c.url||'').trim().replace(/\/rest\/v1.*$/,'').replace(/\/+$/,'');c.key=String(c.key||'').trim();})(window.CLOUD_CONFIG);
 </script>
 <script>
@@ -1281,6 +1285,49 @@ $('wNote').textContent=note;$('cNote').textContent=cloud?'':note;
 const okNote=()=>{if(cloud){$('wNote').textContent='✓ Connected to shared storage';$('cNote').textContent='✓ Connected to shared storage'}};
 const badNote=e=>{if(cloud){const t='Problem reaching shared storage: '+why(e)+' (check the URL and key in the file)';$('wNote').textContent=t;$('cNote').textContent=t}};
 
+/* --- NOTIFICATIONS: banner + sound when your partner adds, sends or deletes --- */
+let soundOn=true;try{soundOn=localStorage.getItem('surpriseSound')!=='off'}catch(_){}
+let ac=null,unread=0;const baseTitle=document.title;
+function unlock(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(_){}}
+['pointerdown','keydown','touchstart'].forEach(e=>addEventListener(e,unlock,{passive:true}));
+function tone(f,t0,d,v){const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(v,t0+.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d);o.connect(g);g.connect(ac.destination);o.start(t0);o.stop(t0+d+.05)}
+function chime(kind){if(!soundOn)return;try{unlock();if(!ac)return;const t=ac.currentTime;
+  if(kind==='del'){tone(420,t,.18,.12);tone(330,t+.14,.26,.12)}
+  else if(kind==='msg'){tone(880,t,.16,.2);tone(1175,t+.13,.28,.2)}
+  else{tone(659,t,.16,.2);tone(988,t+.13,.28,.2)}
+}catch(_){}}
+const ban=document.createElement('div');ban.id='xNotif';document.body.appendChild(ban);let banT=0,banGo=null;
+ban.onclick=()=>{ban.classList.remove('on');if(banGo!=null)window.goTo(banGo)};
+function showBanner(text,panel){ban.textContent=text;banGo=panel;ban.classList.add('on');clearTimeout(banT);banT=setTimeout(()=>ban.classList.remove('on'),5000)}
+function announce(evs){
+  if(!evs.length||!me)return;
+  const first=evs[0],here=!document.hidden&&currentSlide===first.panel,adds=evs.some(e=>e.k==='add');
+  chime(adds?(first.w==='msg'?'msg':'word'):'del');
+  try{navigator.vibrate&&navigator.vibrate([70,40,70])}catch(_){}
+  const txt=first.text+(evs.length>1?'  (+'+(evs.length-1)+' more)':'');
+  if(!here||!adds)showBanner(txt,first.panel);
+  if(document.hidden){unread+=evs.length;document.title='('+unread+') '+baseTitle;
+    try{if('Notification' in window&&Notification.permission==='granted')new Notification('Our little universe',{body:txt})}catch(_){}}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){unread=0;document.title=baseTitle}});
+function diffWords(prev,next){
+  const pm=new Set(prev.map(x=>x.id)),nm=new Set(next.map(x=>x.id)),ev=[];
+  next.forEach(x=>{if(!pm.has(x.id)&&x.author!==me)ev.push({k:'add',w:'word',panel:6,text:'✨ '+x.author+' added a word: '+String(x.word).slice(0,40)})});
+  prev.forEach(x=>{if(!nm.has(x.id)&&x.author!==me)ev.push({k:'del',w:'word',panel:6,text:'🗑️ '+x.author+' deleted a word'})});
+  return ev}
+function diffMsgs(prev,next){
+  const pm=new Set(prev.map(x=>x.id)),nm=new Set(next.map(x=>x.id)),ev=[];
+  const pmax=prev.length?prev[prev.length-1].id:0,nmin=next.length?next[0].id:Infinity;
+  next.forEach(x=>{if(!pm.has(x.id)&&x.id>pmax&&x.author!==me)ev.push({k:'add',w:'msg',panel:7,text:'💬 '+x.author+': '+String(x.body).slice(0,60)})});
+  prev.forEach(x=>{if(!nm.has(x.id)&&x.id>=nmin&&x.author!==me)ev.push({k:'del',w:'msg',panel:7,text:'🗑️ '+x.author+' deleted a message'})});
+  return ev}
+const bell=document.createElement('button');bell.id='bell';bell.type='button';
+const paintBell=()=>{bell.textContent=soundOn?'🔔':'🔕';bell.title=soundOn?'Notifications on (tap to mute)':'Muted (tap to turn on)'};paintBell();
+bell.onclick=()=>{soundOn=!soundOn;try{localStorage.setItem('surpriseSound',soundOn?'on':'off')}catch(_){}paintBell();unlock();
+  if(soundOn){chime('word');try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(_){}toast('Notifications on 🔔')}else toast('Muted 🔕')};
+$('stage').appendChild(bell);
+let wReady=false,cReady=false;
+
 /* --- FUN WORDS --- */
 let words=[],tab='all',wsig='';
 function renderWords(){
@@ -1323,7 +1370,7 @@ async function delWord(w){
   catch(e){toast("Couldn't delete: "+why(e))}
 }
 $('wAdd').onclick=addWord;
-async function refreshWords(){try{const r=await db.list('words');okNote();const s=JSON.stringify(r);if(s!==wsig){wsig=s;words=r;renderWords()}}catch(e){badNote(e)}}
+async function refreshWords(){try{const r=await db.list('words');okNote();const s=JSON.stringify(r);if(s!==wsig){if(wReady)announce(diffWords(words,r));wsig=s;words=r;renderWords()}wReady=true}catch(e){badNote(e)}}
 
 /* --- CHAT --- */
 let msgs=[],limit=300,csig='',seenMax=null;
@@ -1348,10 +1395,10 @@ function renderChat(stick){
 async function refreshChat(stick){
   try{
     const r=await db.list('messages',limit);okNote();const s=sigOf(r);
-    if(s===csig){if(stick)renderChat(true);return}
+    if(s===csig){cReady=true;if(stick)renderChat(true);return}
     const top=r.length?r[r.length-1].id:0;
-    if(seenMax!==null&&top>seenMax){const n=r.filter(m=>m.id>seenMax&&m.author!==me).pop();if(n&&currentSlide!==7)toast('💬 New message from '+n.author)}
-    seenMax=Math.max(seenMax||0,top);csig=s;msgs=r;renderChat(stick);
+    if(cReady)announce(diffMsgs(msgs,r));
+    seenMax=Math.max(seenMax||0,top);csig=s;msgs=r;renderChat(stick);cReady=true;
   }catch(e){badNote(e)}
 }
 async function send(){
@@ -1373,8 +1420,8 @@ $('cIn').onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault(
 /* --- go --- */
 renderWords();renderChat(true);refreshWords();refreshChat(true);
 if(cloud){
-  setInterval(()=>{if(!document.hidden)refreshChat(false)},4000);
-  setInterval(()=>{if(!document.hidden)refreshWords()},12000);
+  setInterval(()=>refreshChat(false),4000);
+  setInterval(()=>refreshWords(),6000);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshChat(false);refreshWords()}});
 }
 const og=window.goTo;
