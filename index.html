@@ -351,7 +351,8 @@ body{
 @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 </style>
 </head>
-<body>
+</body>
+
 <!-- ========= PASSWORD SCREEN ========= -->
 <div id="password-screen">
   <div class="lock-icon">🔒</div>
@@ -363,6 +364,7 @@ body{
   <button class="unlock-btn" onclick="checkPassword()">Unlock</button>
   <div class="error-msg" id="error-msg">Incorrect code. Try again.</div>
 </div>
+
 
 <!-- STARFIELD -->
 <div id="stars"><canvas></canvas></div>
@@ -552,12 +554,10 @@ const TRACKS = [
     src: "song2.mp3", 
     note: "\"Our spiritual song. A reminder of the grace that brought us together.\"" 
   }
-];
-let currentTrack = 0;
-
+];<script>
 /* ================= PASSWORD LOGIC ================= */
 // CHANGE THIS TO YOUR SECRET CODE
-const SECRET_CODE = "ignkadoli"; 
+const SECRET_CODE = "loveyou"; 
 
 function checkPassword() {
   const input = document.getElementById('password-input').value.trim().toLowerCase();
@@ -566,7 +566,6 @@ function checkPassword() {
   
   if (input === SECRET_CODE) {
     screen.classList.add('unlocked');
-    // Optional: Save to session storage so she doesn't have to re-enter if she refreshes
     sessionStorage.setItem('surpriseUnlocked', 'true');
   } else {
     error.classList.add('show');
@@ -575,12 +574,10 @@ function checkPassword() {
   }
 }
 
-// Allow hitting "Enter" to submit
 document.getElementById('password-input').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') checkPassword();
 });
 
-// Check if already unlocked this session
 if (sessionStorage.getItem('surpriseUnlocked') === 'true') {
   document.getElementById('password-screen').classList.add('unlocked');
 }
