@@ -2,7 +2,7 @@
    and show notifications from your partner even when the app is closed.
    It always tries the network first, so updates show up as soon as you re-upload the site. */
 const CACHE = 'our-universe-v2';
-const SHELL = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const SHELL = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting()));
@@ -33,7 +33,7 @@ self.addEventListener('push', e => {
     // Browsers require every push to show something. If the app is already open on screen,
     // show it silently and tidy it away (the in-app banner and sound already handled it).
     await self.registration.showNotification(d.title || 'Our Little Universe', {
-      body: d.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
+      body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png',
       tag, renotify: !open, silent: open, data: { url: d.url || './' }
     });
     if (open) {
